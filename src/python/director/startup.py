@@ -969,8 +969,8 @@ def initCenterOfMassVisulization():
         model.connectModelChanged(drawCenterOfMass)
         drawCenterOfMass(model)
 
-if not ikPlanner.fixedBaseArm:
-    initCenterOfMassVisulization()
+#if not ikPlanner.fixedBaseArm:
+#    initCenterOfMassVisulization()
 
 
 class RobotMoverWidget(object):
