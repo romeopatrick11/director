@@ -629,6 +629,11 @@
           <string>free</string>
          </property>
         </item>
+        <item>
+         <property name="text">
+          <string>constr xyz</string>
+         </property>
+        </item>
        </widget>
       </item>
      </layout>

@@ -450,6 +450,15 @@ class IKPlanner(object):
             linkName=linkName, quaternion=linkFrame, **kwargs)
         return [p, q]
 
+
+    def createSixDofLinkConstraintsQuadruped(self, startPose, linkName, **kwargs):
+        # Not a 6 DOF constraint, but the equivalent of the above but for the hyq's foot positions
+        linkFrame = self.getLinkFrameAtPose(linkName, startPose)
+        p = ikconstraints.PositionConstraint(
+            linkName=linkName, referenceFrame=linkFrame, lowerBound=-0.0001*np.ones(3), upperBound=0.0001*np.ones(3),**kwargs)
+        return p
+
+
     def createFixedLinkConstraints(self, startPose, linkName, **kwargs):
         p = ikconstraints.FixedLinkFromRobotPoseConstraint(
             linkName=linkName, poseName=startPose, **kwargs)
