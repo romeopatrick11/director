@@ -299,6 +299,20 @@ class IKPlanner(object):
             # print "No foot links found in config, assuming fixedBaseArm=True"
             self.fixedBaseArm = True
 
+        self.quadruped = False
+        if 'quadruped' in drcargs.getDirectorConfig():
+            self.quadruped = True
+            # default shrink factor for humanoid is 0.2. increasing here, perhaps too much
+            # 1 = no shrinking. 0 = full shrinking
+            getIkOptions().setProperty('Quasistatic shrink factor',0.9)
+
+        # Using 'hands' to signify quadruped front feet, for now:
+        # Note: there has not been the use of leftHandLink for previous bipeds
+        if 'leftHandLink' in drcargs.getDirectorConfig():
+            self.leftHandLink =  drcargs.getDirectorConfig()['leftHandLink']
+            self.rightHandLink = drcargs.getDirectorConfig()['rightHandLink']
+
+
         # Assume first neck joint is the joint which pitches then neck
         if len(self.neckJoints):
             self.neckPitchJoint = self.neckJoints[0]
@@ -385,8 +399,20 @@ class IKPlanner(object):
         return p
 
 
-    def createFixedFootConstraints(self, startPoseName, **kwargs):
+    def createQuasiStaticConstraintQuadruped(self):
+        p = ikconstraints.QuasiStaticConstraintQuadruped(
+            leftFootEnabled=self.leftFootSupportEnabled,
+            rightFootEnabled=self.rightFootSupportEnabled,
+            leftHandEnabled=self.leftHandSupportEnabled,
+            rightHandEnabled=self.rightHandSupportEnabled,
+            pelvisEnabled=self.pelvisSupportEnabled)
+        p.leftFootLinkName = self.leftFootLink
+        p.rightFootLinkName = self.rightFootLink
+        p.leftHandLinkName = self.leftHandLink
+        p.rightHandLinkName = self.rightHandLink
+        return p
 
+    def createFixedFootConstraints(self, startPoseName, **kwargs):
         constraints = []
         linknames = []
         if self.leftFootSupportEnabled:
@@ -398,6 +424,24 @@ class IKPlanner(object):
             constraints.append(p)
         return constraints
 
+
+    def createFixedFootConstraintsQuadruped(self, startPoseName, **kwargs):
+        constraints = []
+        linknames = []
+        if self.leftFootSupportEnabled:
+            linknames.append(self.leftFootLink)
+        if self.rightFootSupportEnabled:
+            linknames.append(self.rightFootLink)
+        if self.leftHandSupportEnabled:
+            linknames.append(self.leftHandLink)
+        if self.rightHandSupportEnabled:
+            linknames.append(self.rightHandLink)
+        for linkName in linknames:
+            p = self.createFixedLinkConstraintsQuadruped(startPoseName, linkName, **kwargs)
+            constraints.append(p)
+        return constraints
+
+
     def createSixDofLinkConstraints(self, startPose, linkName, **kwargs):
         linkFrame = self.getLinkFrameAtPose(linkName, startPose)
         p = ikconstraints.PositionConstraint(
@@ -408,6 +452,12 @@ class IKPlanner(object):
 
     def createFixedLinkConstraints(self, startPose, linkName, **kwargs):
         p = ikconstraints.FixedLinkFromRobotPoseConstraint(
+            linkName=linkName, poseName=startPose, **kwargs)
+        return p
+
+
+    def createFixedLinkConstraintsQuadruped(self, startPose, linkName, **kwargs):
+        p = ikconstraints.FixedLinkFromRobotPoseConstraintQuadruped(
             linkName=linkName, poseName=startPose, **kwargs)
         return p
 
@@ -1393,7 +1443,11 @@ class IKPlanner(object):
             constraints.append(p)
             poseNames.append(poseName)
 
-        if not self.fixedBaseArm and not self.robotNoFeet:
+        if self.quadruped:
+            if feetOnGround:
+                constraints.extend(self.createFixedFootConstraintsQuadruped(poseNames[-1]))
+
+        if (not self.fixedBaseArm and not self.robotNoFeet) and not self.quadruped:
             if feetOnGround:
                 constraints.extend(self.createFixedFootConstraints(poseNames[-1]))
 

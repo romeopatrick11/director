@@ -106,6 +106,11 @@ class EndEffectorTeleopPanel(object):
         #self.ui.interactiveCheckbox.visible = False
         #self.ui.updateIkButton.visible = False
 
+        if (self.panel.ikPlanner.quadruped):
+            # teleop configuration for a quadruped
+            self.setLHandPlanningSupportEnabled(True)
+            self.setRHandPlanningSupportEnabled(True)
+
         if 'kneeJointLimits' in drcargs.getDirectorConfig():
             self.kneeJointLimits = drcargs.getDirectorConfig()['kneeJointLimits']
 
@@ -436,8 +441,41 @@ class EndEffectorTeleopPanel(object):
         startPose = self.panel.planningUtils.getPlanningStartPose()
         ikPlanner.addPose(startPose, startPoseName)
 
+        if ikPlanner.quadruped:
+            constraints = []
+            constraints.append(ikPlanner.createQuasiStaticConstraintQuadruped())
+
+            constraints.append(ikPlanner.createFixedLinkConstraintsQuadruped(startPoseName, ikPlanner.leftFootLink, tspan=[0.0, 1.0], lowerBound=-0.0001*np.ones(3), upperBound=0.0001*np.ones(3), angleToleranceInDegrees=0.1))
+            constraints.append(ikPlanner.createFixedLinkConstraintsQuadruped(startPoseName, ikPlanner.rightFootLink, tspan=[0.0, 1.0], lowerBound=-0.0001*np.ones(3), upperBound=0.0001*np.ones(3), angleToleranceInDegrees=0.1))
+            constraints.append(ikPlanner.createFixedLinkConstraintsQuadruped(startPoseName, ikPlanner.leftHandLink, tspan=[0.0, 1.0], lowerBound=-0.0001*np.ones(3), upperBound=0.0001*np.ones(3), angleToleranceInDegrees=0.1))
+            constraints.append(ikPlanner.createFixedLinkConstraintsQuadruped(startPoseName, ikPlanner.rightHandLink, tspan=[0.0, 1.0], lowerBound=-0.0001*np.ones(3), upperBound=0.0001*np.ones(3), angleToleranceInDegrees=0.1))
+
+
+            if self.getBaseConstraint() == 'fixed':
+                constraints.append(ikPlanner.createLockedBasePostureConstraint(startPoseName, lockLegs=False))
+                ikPlanner.setBaseLocked(True)
+            if self.getBaseConstraint() == 'constrained':
+                constraints.extend(ikPlanner.createSixDofLinkConstraints(startPoseName, ikPlanner.pelvisLink, tspan=[1.0, 1.0]))
+                ikPlanner.setBaseLocked(False)
+            elif self.getBaseConstraint() == 'xyz only':
+                constraints.append(ikPlanner.createXYZMovingBasePostureConstraint(startPoseName))
+                #constraints.append(ikPlanner.createKneePostureConstraint(self.kneeJointLimits))
+                ikPlanner.setBaseLocked(False)
+            elif self.getBaseConstraint() == 'z only':
+                constraints.append(ikPlanner.createZMovingBasePostureConstraint(startPoseName))
+                #constraints.append(ikPlanner.createKneePostureConstraint(self.kneeJointLimits))
+                ikPlanner.setBaseLocked(False)
+            elif self.getBaseConstraint() == 'limited':
+                constraints.append(ikPlanner.createMovingBaseSafeLimitsConstraint())
+                #constraints.append(ikPlanner.createKneePostureConstraint(self.kneeJointLimits))
+                ikPlanner.setBaseLocked(False)
+            elif self.getBaseConstraint() == 'free':
+                #constraints.append(ikPlanner.createKneePostureConstraint(self.kneeJointLimits))
+                ikPlanner.setBaseLocked(False)
+
+
         # Humanoid, i.e. robot has feet and is not a fixed base arm
-        if not ikPlanner.fixedBaseArm and not ikPlanner.robotNoFeet:
+        if (not ikPlanner.fixedBaseArm and not ikPlanner.robotNoFeet) and not ikPlanner.quadruped:
             constraints = []
             constraints.append(ikPlanner.createQuasiStaticConstraint())
             constraints.append(ikPlanner.createLockedNeckPostureConstraint(startPoseName))

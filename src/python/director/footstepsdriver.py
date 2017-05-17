@@ -616,6 +616,27 @@ class FootstepsDriver(object):
             else:
                 raise ValueError("Unrecognized support contact group: {:d}".format(support_contact_groups))
 
+        elif (_modelName == "hyq"):  #hyq fake
+            #these values were taken from ihmc code: ValkyriePhysicalProperties.java
+            #they are also used in createFootstepList in lcm2ros_ihmc.cpp
+            if support_contact_groups == lcmdrc.footstep_params_t.SUPPORT_GROUPS_HEEL_TOE:
+                contact_pts_left[0,:] = [-0.038,  0.055, -0.09]
+                contact_pts_left[1,:] = [-0.038, -0.055, -0.09]
+                contact_pts_left[2,:] = [0.172,   0.055, -0.09]
+                contact_pts_left[3,:] = [0.172,  -0.055, -0.09]
+            elif support_contact_groups == lcmdrc.footstep_params_t.SUPPORT_GROUPS_MIDFOOT_TOE:
+                contact_pts_left[0,:] = [0.032,  0.055, -0.09]
+                contact_pts_left[1,:] = [0.032, -0.055, -0.09]
+                contact_pts_left[2,:] = [0.172,   0.055, -0.09]
+                contact_pts_left[3,:] = [0.172,  -0.055, -0.09]
+            elif support_contact_groups == lcmdrc.footstep_params_t.SUPPORT_GROUPS_HEEL_MIDFOOT:
+                contact_pts_left[0,:] = [-0.038,  0.055, -0.09]
+                contact_pts_left[1,:] = [-0.038, -0.055, -0.09]
+                contact_pts_left[2,:] = [0.102,   0.055, -0.09]
+                contact_pts_left[3,:] = [0.102,  -0.055, -0.09]
+            else:
+                raise ValueError("Unrecognized support contact group: {:d}".format(support_contact_groups))
+
             contact_pts_right = contact_pts_left.copy()
 
         else:
@@ -648,6 +669,8 @@ class FootstepsDriver(object):
         if "atlas" in _modelName: # atlas_v3/v4/v5
             t_feet_mid = transformUtils.frameInterpolate(t_lf_mid, t_rf_mid, 0.5)
         elif (_modelName == "valkyrie"): # valkyrie
+            t_feet_mid = transformUtils.frameInterpolate(t_lf_mid, t_rf_mid, 0.5)
+        elif (_modelName == "hyq"): # valkyrie
             t_feet_mid = transformUtils.frameInterpolate(t_lf_mid, t_rf_mid, 0.5)
         else:
             raise ValueError("Model Name not recognised")
