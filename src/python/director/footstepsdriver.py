@@ -673,8 +673,9 @@ class FootstepsDriver(object):
             t_lh = np.array( model.getLinkFrame(_leftFootLink).GetPosition() )
             t_rh = np.array( model.getLinkFrame(_rightFootLink).GetPosition() )
             mid = (t_lf + t_rf + t_lh + t_rh)/4
-            #rpy = [0.0, 0.0, np.degrees(transformUtils.rollPitchYawFromTransform(t_feet_mid)[2])]
-            rpy = [0.0, 0.0, 0.0]
+            # this is not optimal, correct approach should use contact points to
+            # determine desired orientation, not the current orientation
+            rpy = [0.0, 0.0, model.getLinkFrame(_pelvisLink).GetOrientation()[2]]
             return transformUtils.frameFromPositionAndRPY(mid, rpy)
 
         contact_pts_left, contact_pts_right = FootstepsDriver.getContactPts()

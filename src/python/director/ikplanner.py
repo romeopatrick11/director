@@ -1009,6 +1009,43 @@ class IKPlanner(object):
         return self.computePostureGoal(startPose, endPose)
 
 
+
+    def computeHomeNominalPoseHyq(self, startPose, footReferenceFrame, pelvisHeightAboveFeet=0.627, ikParameters=None, moveArms=True):
+        ''' Compute a pose with the hyq's trunk above the mid point of the feet with zero roll and pitch.
+            The default height is HyQ specific
+        '''
+
+        nominalPoseName = 'q_nom'
+        startPoseName = 'stand_start'
+        self.addPose(startPose, startPoseName)
+
+        constraints = []
+        constraints.append(self.createQuasiStaticConstraintQuadruped())
+        constraints.extend(self.createFixedFootConstraintsQuadruped(startPoseName))
+        #vis.updateFrame(footReferenceFrame,'footReferenceFrame', visible=True)
+
+        pos = np.array(footReferenceFrame.GetPosition()) + np.array([0,0,pelvisHeightAboveFeet])
+        tf = transformUtils.frameFromPositionAndRPY( pos ,[0,0, footReferenceFrame.GetOrientation()[2] ])
+        #vis.updateFrame(tf,'goal pelvis frame', visible=True)
+        p, q = self.createPositionOrientationConstraint(self.pelvisLink, tf, vtk.vtkTransform(), positionTolerance=0.0, angleToleranceInDegrees=0.0)
+        p.tspan = [1.0, 1.0]
+        q.tspan = [1.0, 1.0]
+        constraints.extend([p, q])
+
+        constraintSet = ConstraintSet(self, constraints, '', startPoseName)
+        constraintSet.ikParameters = ikParameters
+        endPose, info = constraintSet.runIk()
+        return endPose, info
+
+
+    def computeHomeNominalPlanHyq(self, startPose, footReferenceFrame, pelvisHeightAboveFeet=0.627):
+
+        endPose, info = self.computeHomeNominalPoseHyq(startPose, footReferenceFrame, pelvisHeightAboveFeet, None)
+        print 'info:', info
+
+        return self.computePostureGoal(startPose, endPose)
+
+
     def createPostureConstraint(self, startPostureName, jointNames):
         p = ikconstraints.PostureConstraint()
         p.postureName = startPostureName
